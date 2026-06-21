@@ -11,6 +11,7 @@
 #include "drawing.h"
 #include "timer.h"
 #include "utility.h"
+#include "touch.h"
 #include <pebble.h>
 
 // Main constants
@@ -69,6 +70,9 @@ static void prv_back_click_handler(ClickRecognizerRef recognizer, void *ctx) {
   if ((hr && main_data.control_mode == ControlModeEditMin) ||
       main_data.control_mode == ControlModeEditSec) {
     main_data.control_mode--;
+    #ifdef PBL_TOUCH
+    touch_enable(true);
+    #endif
   } else {
     window_stack_pop(true);
   }
@@ -126,12 +130,21 @@ static void prv_select_click_handler(ClickRecognizerRef recognizer, void *ctx) {
   switch (main_data.control_mode) {
   case ControlModeEditHr:
     main_data.control_mode = ControlModeEditMin;
+    #ifdef PBL_TOUCH
+    touch_enable(true);
+  #endif
     break;
   case ControlModeEditMin:
     main_data.control_mode = ControlModeEditSec;
+    #ifdef PBL_TOUCH
+    touch_enable(true);
+  #endif
     break;
   case ControlModeEditSec:
     main_data.control_mode = ControlModeCounting;
+    #ifdef PBL_TOUCH
+    touch_enable(false);
+    #endif
     timer_toggle_play_pause();
     if (!main_data.app_timer) {
       prv_app_timer_callback(NULL);
@@ -139,6 +152,9 @@ static void prv_select_click_handler(ClickRecognizerRef recognizer, void *ctx) {
     break;
   case ControlModeCounting:
     main_data.control_mode = ControlModeEditSec;
+    #ifdef PBL_TOUCH
+    touch_enable(true);
+    #endif
     timer_toggle_play_pause();
     break;
   }
@@ -159,6 +175,9 @@ static void prv_select_raw_click_handler(ClickRecognizerRef recognizer, void *ct
 // Select long click handler
 static void prv_select_long_click_handler(ClickRecognizerRef recognizer, void *ctx) {
   main_data.control_mode = ControlModeEditMin;
+  #ifdef PBL_TOUCH
+  touch_enable(true);
+  #endif
   timer_reset();
   // animate and refresh
   drawing_update();
@@ -230,6 +249,22 @@ static void prv_tick_timer_service_callback(struct tm *tick_time, TimeUnits unit
   layer_mark_dirty(main_data.layer);
 }
 
+// Touch Timer Set callback
+static void prv_touch_timer_set_callback(uint8_t hours, uint8_t minutes, uint8_t seconds) {
+  // TODO: This stinks
+
+  timer_set_time_parts(hours, minutes, seconds);
+
+  main_data.control_mode = ControlModeCounting;
+  #ifdef PBL_TOUCH
+  touch_enable(false);
+  #endif
+  timer_toggle_play_pause();
+  if (!main_data.app_timer) {
+    prv_app_timer_callback(NULL);
+  }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Loading and Unloading
 //
@@ -273,6 +308,13 @@ static void prv_initialize(void) {
 
   // initialize drawing singleton
   drawing_initialize(main_data.layer);
+  #if PBL_TOUCH
+  // subscribe to touch
+  touch_create(main_data.layer, &prv_touch_timer_set_callback);
+  if (main_data.control_mode != ControlModeCounting) {
+    touch_enable(true);
+  }
+  #endif
   // subscribe to tick timer service
   tick_timer_service_subscribe(MINUTE_UNIT, prv_tick_timer_service_callback);
   // start refreshing
@@ -290,6 +332,10 @@ static void prv_initialize(void) {
 
 // Terminate the program
 static void prv_terminate(void) {
+  #ifdef PBL_TOUCH
+  touch_enable(false);
+  touch_destroy();
+  #endif
   // unsubscribe from timer service
   tick_timer_service_unsubscribe();
   // schedule wakeup

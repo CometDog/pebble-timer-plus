@@ -12,6 +12,24 @@
 #pragma once
 #include <pebble.h>
 
+//! Additional utility macros
+#define MS_PER_S 1000
+
+#define SQUARE(x) ((x) * (x))
+#define ABS(x) ((x) < 0 ? -(x) : (x))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define UNUSED(x) ((void)(x))
+
+#define MUL_FRACT(a, b, c) ((a) * (b) / (c))
+
+#define WITHIN(x, lo, hi) ((x) >= (lo) && (x) <= (hi))
+#define WITHIN_EXCL(x, lo, hi) ((x) > (lo) && (x) < (hi))
+
+#define DEFAULT_BACKLIGHT_TIMEOUT_MS 10000
+
+#define LOG(...) APP_LOG(APP_LOG_LEVEL_DEBUG, __VA_ARGS__)
+
 //! Time span conversions
 #define MSEC_IN_HR 3600000
 #define MSEC_IN_MIN 60000
@@ -27,6 +45,9 @@ static const uint8_t GOvalScaleModeFillCircle = 0;
 void graphics_fill_radial(GContext *ctx, GRect bounds, uint8_t fill_mode, int16_t inset,
                           int32_t angle_start, int32_t angle_end);
 #endif
+
+int32_t grect_diagonal(GRect rect);
+float fast_sqrt(const float x);
 
 #ifdef PBL_BW
 //! Fill GRect with "grey" on Aplite
@@ -58,3 +79,6 @@ void *malloc_check(uint16_t size, const char *file, int line);
 //! Get current epoch in milliseconds
 //! @return The current epoch time in milliseconds
 uint64_t epoch(void);
+
+//! Get point from polar coordinates
+GPoint point_from_angle(GPoint center, int32_t angle, int16_t radius);

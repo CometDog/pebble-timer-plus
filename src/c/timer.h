@@ -16,9 +16,19 @@
 //! @param sec A pointer to where to store the second value of the timer
 void timer_get_time_parts(uint16_t *hr, uint16_t *min, uint16_t *sec);
 
+//! Set timer value
+//! @param hr A value for the hour of the timer
+//! @param min A value for the minute of the timer
+//! @param sec A value for the second of the timer
+void timer_set_time_parts(uint16_t hr, uint16_t min, uint16_t sec);
+
+
 //! Get the timer time in milliseconds
 //! @return The current value of the timer in milliseconds
 int64_t timer_get_value_ms(void);
+
+//! Set the timer time in milliseconds
+void timer_set_value_ms(int64_t ms);
 
 //! Get the total timer time in milliseconds
 //! @return The total value of the timer in milliseconds

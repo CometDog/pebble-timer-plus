@@ -10,6 +10,7 @@
 // @bugs No known bugs
 
 #include "utility.h"
+#include "math.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Compatibility Functions for Aplite
@@ -20,12 +21,6 @@
 GRect grect_inset(GRect bounds, int16_t inset) {
   return GRect(bounds.origin.x + inset, bounds.origin.y + inset, bounds.size.w - inset * 2,
                bounds.size.h - inset * 2);
-}
-
-// Get a point from a center point, angle, and radius
-static GPoint prv_polar_to_rectangular(GPoint center, int32_t angle, int16_t radius) {
-  return GPoint((sin_lookup(angle) * radius / TRIG_MAX_RATIO) + center.x,
-                (-cos_lookup(angle) * radius / TRIG_MAX_RATIO) + center.y);
 }
 
 // Draw a filled arc
@@ -43,10 +38,10 @@ void graphics_fill_radial(GContext *ctx, GRect bounds, uint8_t fill_mode, int16_
   GPoint points[8];
   uint32_t idx = 0;
   for (int32_t t_angle = angle_start; t_angle < angle_end; t_angle += step) {
-    points[idx++] = prv_polar_to_rectangular(center, t_angle, radius);
+    points[idx++] = point_from_angle(center, t_angle, radius);
   }
   // add point at hand position, and in center (to form pie wedge)
-  points[idx++] = prv_polar_to_rectangular(center, angle_end, radius);
+  points[idx++] = point_from_angle(center, angle_end, radius);
   points[idx++] = center;
 
   // fill the covering
@@ -56,6 +51,33 @@ void graphics_fill_radial(GContext *ctx, GRect bounds, uint8_t fill_mode, int16_
   gpath_destroy(path);
 }
 #endif
+
+// Get a point from a center point, angle, and radius
+GPoint point_from_angle(GPoint center, int32_t angle, int16_t radius) {
+  return GPoint((sin_lookup(angle) * radius / TRIG_MAX_RATIO) + center.x,
+                (-cos_lookup(angle) * radius / TRIG_MAX_RATIO) + center.y);
+}
+
+// quake 3 sqrt
+float fast_sqrt(const float x) {
+    const float xhalf = 0.5f * x;
+    union {
+        float x;
+        int i;
+    } u;
+    u.x = x;
+    u.i = 0x5f3759df - (u.i >> 1);  // initial guess
+    return x * u.x * (1.5f - xhalf * u.x * u.x);  // Newton step
+}
+
+/// Return the diagonal length of `rect`
+int32_t grect_diagonal(GRect rect) {
+    return ceil(fast_sqrt(
+        (rect.size.h * rect.size.h)
+        + (rect.size.w * rect.size.w)
+    ));
+}
+
 
 #ifdef PBL_BW
 // Fill GRect with "grey" on Aplite

@@ -46,6 +46,15 @@ void timer_get_time_parts(uint16_t *hr, uint16_t *min, uint16_t *sec) {
   (*sec) = value % MSEC_IN_MIN / MSEC_IN_SEC;
 }
 
+// Set the timer value
+void timer_set_time_parts(uint16_t hr, uint16_t min, uint16_t sec) {
+  int64_t ms = 0;
+  ms += hr * MSEC_IN_HR;
+  ms += min * MSEC_IN_MIN;
+  ms += sec * MSEC_IN_SEC;
+  timer_set_value_ms(ms);
+}
+
 // Get the timer time in milliseconds assuming the following conditions
 // 1. when the timer is running, start_ms represents the epoch when it was started
 // 2. when it is paused, start_ms represents the negative of the time is has been running
@@ -56,6 +65,17 @@ int64_t timer_get_value_ms(void) {
     return -value;
   }
   return value;
+}
+
+void timer_set_value_ms(int64_t ms) {
+  timer_reset();
+  timer_data.length_ms = ms;
+  if (timer_get_value_ms() < MSEC_IN_SEC) {
+    timer_reset();
+  }
+  if (timer_data.length_ms) {
+    timer_data.can_vibrate = true;
+  }
 }
 
 // Get the total timer time in milliseconds
